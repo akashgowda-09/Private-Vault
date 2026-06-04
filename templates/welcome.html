@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrivateVault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+:root {
+  --navy:    #08101e;
+  --navy2:   #0d1a2e;
+  --blue:    #3b6aff;
+  --purple:  #6a5cff;
+  --glow:    #4f7fff;
+  --soft:    rgba(90,120,255,0.12);
+  --border:  rgba(90,120,255,0.18);
+  --text:    #e8eeff;
+  --muted:   rgba(180,190,230,0.5);
+}
+ 
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+}
+ 
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ 
+/* ── CANVAS ── */
+canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+ 
+/* ── BG MESH GRID ── */
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(59,106,255,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,106,255,0.045) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+}
+ 
+/* ── AURORA BLOBS ── */
+.aurora {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(90px);
+  z-index: 0;
+  pointer-events: none;
+  animation: auroraFloat ease-in-out infinite;
+}
+.a1 { width:700px; height:500px; background:radial-gradient(ellipse, rgba(59,106,255,0.18) 0%, transparent 70%); top:-180px; left:-200px; animation-duration:20s; }
+.a2 { width:500px; height:400px; background:radial-gradient(ellipse, rgba(106,92,255,0.15) 0%, transparent 70%); bottom:-150px; right:-150px; animation-duration:25s; animation-delay:-10s; }
+.a3 { width:350px; height:350px; background:radial-gradient(ellipse, rgba(79,127,255,0.10) 0%, transparent 70%); top:50%; left:55%; animation-duration:18s; animation-delay:-6s; }
+ 
+@keyframes auroraFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%      { transform: translate(30px,-20px) scale(1.06); }
+  66%      { transform: translate(-20px,25px) scale(0.96); }
+}
+ 
+/* ── MAIN WRAPPER ── */
+.scene {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  animation: sceneIn 1s cubic-bezier(0.16,1,0.3,1) both;
+}
+ 
+@keyframes sceneIn {
+  from { opacity:0; transform: translateY(32px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+ 
+/* ── TOP BADGE ── */
+.top-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px 6px 10px;
+  border-radius: 100px;
+  background: rgba(59,106,255,0.1);
+  border: 1px solid rgba(59,106,255,0.28);
+  font-size: 12px;
+  color: rgba(150,180,255,0.85);
+  letter-spacing: 0.4px;
+  margin-bottom: 32px;
+  animation: badgePop 0.5s cubic-bezier(0.34,1.56,0.64,1) both 0.3s;
+}
+ 
+@keyframes badgePop {
+  from { opacity:0; transform: scale(0.85); }
+  to   { opacity:1; transform: scale(1); }
+}
+ 
+.badge-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 8px var(--blue);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+ 
+@keyframes dotPulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%     { opacity:0.6; transform:scale(1.35); }
+}
+ 
+/* ── CARD ── */
+.card {
+  width: 440px;
+  padding: 52px 48px 44px;
+  background: linear-gradient(160deg, rgba(13,26,46,0.9) 0%, rgba(8,16,30,0.95) 100%);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(59,106,255,0.06),
+    0 40px 100px rgba(0,0,0,0.75),
+    0 0 80px rgba(59,106,255,0.06) inset;
+  backdrop-filter: blur(20px);
+}
+ 
+/* top glow bar */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(106,92,255,0.7), rgba(59,106,255,0.7), transparent);
+}
+ 
+/* inner noise texture */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.4;
+  pointer-events: none;
+  border-radius: 28px;
+}
+ 
+/* ── ICON ── */
+.icon-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 1;
+}
+ 
+.icon-hex {
+  position: relative;
+  width: 76px; height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ 
+/* hexagon rings */
+.icon-hex::before,
+.icon-hex::after {
+  content: '';
+  position: absolute;
+  border-radius: 18px;
+  animation: hexRotate linear infinite;
+}
+ 
+.icon-hex::before {
+  inset: 0;
+  border: 1.5px solid rgba(59,106,255,0.35);
+  transform: rotate(0deg);
+  animation-duration: 8s;
+}
+ 
+.icon-hex::after {
+  inset: 7px;
+  border: 1px solid rgba(106,92,255,0.25);
+  transform: rotate(45deg);
+  animation-duration: 12s;
+  animation-direction: reverse;
+}
+ 
+@keyframes hexRotate { to { transform: rotate(360deg); } }
+ 
+.icon-core {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(59,106,255,0.2), rgba(106,92,255,0.25));
+  border: 1px solid rgba(106,92,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 24px rgba(59,106,255,0.2), 0 0 48px rgba(59,106,255,0.08);
+  animation: coreGlow 3s ease-in-out infinite 2s;
+}
+ 
+@keyframes coreGlow {
+  0%,100% { box-shadow: 0 0 24px rgba(59,106,255,0.2), 0 0 48px rgba(59,106,255,0.08); }
+  50%      { box-shadow: 0 0 36px rgba(59,106,255,0.4), 0 0 72px rgba(59,106,255,0.15); }
+}
+ 
+/* ── LOGO ── */
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  min-height: 48px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+  z-index: 1;
+}
+ 
+.logo-private { color: #dde6ff; }
+.logo-vault {
+  background: linear-gradient(90deg, #3b6aff, #8a7fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+ 
+.cursor {
+  width: 2.5px; height: 40px;
+  background: linear-gradient(180deg, #3b6aff, #6a5cff);
+  border-radius: 2px;
+  margin-left: 2px;
+  display: inline-block;
+  vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity:0; } }
+ 
+/* ── DIVIDER ── */
+.divider {
+  margin: 28px 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  animation: revealFade 0.5s forwards 2s;
+}
+ 
+.div-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59,106,255,0.3), transparent);
+  position: relative;
+  overflow: hidden;
+}
+ 
+.div-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  transform: translateX(-100%);
+  animation: shimmerLine 4s ease-in-out infinite 3s;
+}
+ 
+@keyframes shimmerLine {
+  0%   { transform: translateX(-100%); }
+  40%,100% { transform: translateX(200%); }
+}
+ 
+.div-icon {
+  font-size: 14px;
+  opacity: 0.5;
+  color: var(--blue);
+}
+ 
+/* ── SUBTITLE ── */
+.subtitle {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--muted);
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  animation: revealFade 0.5s forwards 2.1s;
+}
+ 
+/* ── FEATURES ROW ── */
+.features {
+  display: flex;
+  gap: 10px;
+  margin-top: 26px;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  animation: revealFade 0.5s forwards 2.3s;
+}
+ 
+.feat {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: 12px;
+  background: rgba(59,106,255,0.06);
+  border: 1px solid rgba(59,106,255,0.13);
+  font-size: 11.5px;
+  color: rgba(180,200,255,0.65);
+  letter-spacing: 0.2px;
+  line-height: 1.5;
+  transition: background 0.25s, border-color 0.25s, transform 0.25s;
+  cursor: default;
+}
+ 
+.feat:hover {
+  background: rgba(59,106,255,0.12);
+  border-color: rgba(59,106,255,0.28);
+  color: rgba(200,220,255,0.85);
+  transform: translateY(-3px);
+}
+ 
+.feat-icon {
+  font-size: 18px;
+  display: block;
+  margin-bottom: 6px;
+}
+ 
+/* ── BUTTON ── */
+.btn-wrap {
+  margin-top: 28px;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  animation: revealFade 0.5s forwards 2.5s;
+}
+ 
+/* glow layer behind button */
+.btn-glow {
+  position: absolute;
+  inset: -8px;
+  border-radius: 20px;
+  background: linear-gradient(90deg, #3b6aff, #6a5cff);
+  filter: blur(18px);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 0;
+}
+ 
+.btn {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #3b6aff 0%, #6a5cff 100%);
+  color: white;
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.25s, box-shadow 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+ 
+.btn-wrap:hover .btn-glow { opacity: 0.55; }
+ 
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(59,106,255,0.45);
+}
+ 
+.btn:active { transform: scale(0.98) translateY(0); }
+ 
+/* sweep shine */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -80%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  transform: skewX(-15deg);
+  animation: btnSweep 4s ease-in-out infinite 3s;
+}
+ 
+@keyframes btnSweep {
+  0%    { left: -80%; }
+  35%, 100% { left: 180%; }
+}
+ 
+.btn-arrow {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  transition: transform 0.25s;
+}
+ 
+.btn:hover .btn-arrow { transform: translateX(4px); }
+ 
+/* ── TRUST ROW ── */
+.trust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 22px;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  animation: revealFade 0.5s forwards 2.7s;
+}
+ 
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(150,170,220,0.5);
+}
+ 
+.trust-dot { width:1px; height:12px; background:rgba(100,120,200,0.2); }
+ 
+/* ── ANIMATIONS ── */
+@keyframes revealFade {
+  from { opacity:0; transform: translateY(10px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+ 
+/* ── FLOATING PARTICLES wrapper (behind everything) ── */
+.particles-layer { position:fixed; inset:0; z-index:1; pointer-events:none; }
+</style>
+</head>
+<body>
+ 
+<canvas id="cvs"></canvas>
+<div class="grid-bg"></div>
+<div class="aurora a1"></div>
+<div class="aurora a2"></div>
+<div class="aurora a3"></div>
+ 
+<div class="scene">
+ 
+  <div class="top-badge">
+    <span class="badge-dot"></span>
+    End-to-end encrypted file vault
+  </div>
+ 
+  <div class="card">
+ 
+    <div class="icon-wrap">
+      <div class="icon-hex">
+        <div class="icon-core">🔐</div>
+      </div>
+    </div>
+ 
+    <div class="logo">
+      <span class="logo-private" id="p1"></span><span class="logo-vault" id="p2"></span><span class="cursor" id="cur"></span>
+    </div>
+ 
+    <div class="divider">
+      <div class="div-line"></div>
+      <span class="div-icon">◆</span>
+      <div class="div-line"></div>
+    </div>
+ 
+    <p class="subtitle">
+      Securely store, manage and share your files<br>with complete privacy and control.
+    </p>
+ 
+    <div class="features">
+      <div class="feat">
+        <span class="feat-icon">🛡️</span>
+        AES-256<br>Encryption
+      </div>
+      <div class="feat">
+        <span class="feat-icon">☁️</span>
+        Cloud<br>Storage
+      </div>
+      <div class="feat">
+        <span class="feat-icon">🔑</span>
+        OTP<br>Auth
+      </div>
+      <div class="feat">
+        <span class="feat-icon">🔗</span>
+        Secure<br>Sharing
+      </div>
+    </div>
+ 
+    <div class="btn-wrap">
+      <div class="btn-glow"></div>
+      <button class="btn" onclick="location.href='/login'">
+        Get Started
+        <span class="btn-arrow">→</span>
+      </button>
+    </div>
+ 
+    <div class="trust">
+      <span class="trust-item">✦ Zero Knowledge</span>
+      <span class="trust-dot"></span>
+      <span class="trust-item">✦ Encrypted at Rest</span>
+      <span class="trust-dot"></span>
+      <span class="trust-item">✦ Private by Default</span>
+    </div>
+ 
+  </div>
+ 
+</div>
+ 
+<script>
+/* ── TYPING ─────────────────────────── */
+const word1 = "Private", word2 = "Vault";
+const p1 = document.getElementById("p1");
+const p2 = document.getElementById("p2");
+const cur = document.getElementById("cur");
+let idx = 0;
+const full = word1 + word2;
+ 
+function type() {
+  if (idx <= word1.length) {
+    p1.textContent = full.slice(0, idx);
+  } else {
+    p1.textContent = word1;
+    p2.textContent = full.slice(word1.length, idx);
+  }
+  idx++;
+  if (idx <= full.length) setTimeout(type, 80);
+  else {
+    setTimeout(() => { cur.style.animation = "none"; cur.style.opacity = "0"; }, 1800);
+  }
+}
+setTimeout(type, 400);
+ 
+ 
+/* ── PARTICLES + CONNECTIONS ────────── */
+const cvs = document.getElementById("cvs");
+const ctx = cvs.getContext("2d");
+let W, H;
+ 
+function resize() {
+  W = cvs.width = innerWidth;
+  H = cvs.height = innerHeight;
+}
+resize();
+addEventListener("resize", resize);
+ 
+const COUNT = 80;
+const pts = Array.from({length: COUNT}, () => ({
+  x: Math.random() * innerWidth,
+  y: Math.random() * innerHeight,
+  vx: (Math.random() - 0.5) * 0.3,
+  vy: (Math.random() - 0.5) * 0.3,
+  r: Math.random() * 1.5 + 0.5,
+  o: Math.random() * 0.5 + 0.15,
+  phase: Math.random() * Math.PI * 2
+}));
+ 
+let t = 0;
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  t += 0.012;
+ 
+  for (let i = 0; i < COUNT; i++) {
+    const p = pts[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+ 
+    const twinkle = p.o * (0.75 + 0.25 * Math.sin(t * 1.8 + p.phase));
+ 
+    for (let j = i + 1; j < COUNT; j++) {
+      const q = pts[j];
+      const dx = p.x - q.x, dy = p.y - q.y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < 110) {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(q.x, q.y);
+        const a = (1 - d / 110) * 0.08 * twinkle * 2;
+        ctx.strokeStyle = `rgba(79,127,255,${a})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+ 
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(100,150,255,${twinkle})`;
+    ctx.shadowColor = "#4f7fff";
+    ctx.shadowBlur = p.r * 4;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+ 
+ 
+/* ── MOUSE REPEL ────────────────────── */
+let mx = -999, my = -999;
+addEventListener("mousemove", e => { mx = e.clientX; my = e.clientY; });
+ 
+setInterval(() => {
+  pts.forEach(p => {
+    const dx = p.x - mx, dy = p.y - my;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < 80) {
+      p.vx += (dx / d) * 0.15;
+      p.vy += (dy / d) * 0.15;
+      const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+      if (speed > 1.2) { p.vx /= speed; p.vy /= speed; }
+    }
+  });
+}, 16);
+</script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Signup</title>
+
+<style>
+body {
+  margin:0;
+  font-family:system-ui;
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+/* CARD */
+.card {
+  background: rgba(17,24,39,0.9);
+  backdrop-filter: blur(12px);
+  padding:32px;
+  border-radius:20px;
+  width:340px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.7);
+  border:1px solid rgba(99,102,241,0.2);
+}
+
+/* TITLE */
+.title {
+  text-align:center;
+  margin-bottom:15px;
+  font-size:24px;
+  font-weight:600;
+}
+
+/* INPUT */
+.input {
+  width:100%;
+  padding:12px;
+  margin-bottom:10px;
+  border-radius:10px;
+  background:#020617;
+  border:1px solid #334155;
+  color:white;
+}
+
+.input:focus {
+  border-color:#6366f1;
+  box-shadow:0 0 0 2px rgba(99,102,241,0.2);
+}
+
+/* BUTTON */
+.btn {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(90deg,#6366f1,#818cf8);
+  font-weight:600;
+  cursor:pointer;
+}
+
+.btn:hover {
+  transform:translateY(-1px);
+}
+
+/* LINK */
+.link {
+  margin-top:12px;
+  text-align:center;
+  font-size:13px;
+  color:#9ca3af;
+}
+
+.link a {
+  color:#818cf8;
+  text-decoration:none;
+}
+
+/* MSG */
+.msg {
+  background:rgba(239,68,68,0.1);
+  border:1px solid rgba(239,68,68,0.3);
+  color:#f87171;
+  font-size:13px;
+  text-align:center;
+  padding:8px;
+  border-radius:8px;
+  margin-bottom:12px;
+}
+
+/* STRENGTH */
+#strengthText {
+  font-size:12px;
+  margin-bottom:10px;
+}
+
+/* SHAKE */
+.shake {
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0%{transform:translateX(0);}
+  25%{transform:translateX(-5px);}
+  50%{transform:translateX(5px);}
+  75%{transform:translateX(-5px);}
+  100%{transform:translateX(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <div class="title">Create Account</div>
+
+  <!-- FLASH -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="msg">
+      {% for category, msg in messages %}
+        {% if category == 'signup' %}
+          <div>{{ msg }}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% endwith %}
+
+  <form method="POST" action="/signup" onsubmit="return validateSignup() && showLoader()">
+
+    <input class="input" type="text" name="name" placeholder="Full Name" required>
+
+    <input class="input" type="email" name="email" placeholder="Email" required>
+
+    <input class="input" type="text" name="contact" placeholder="Phone Number" required>
+
+    <input class="input" type="password" name="password" placeholder="Password" required>
+
+    <!-- STRENGTH -->
+    <div id="strengthText"></div>
+
+    <input class="input" type="password" name="confirm_password" placeholder="Confirm Password" required>
+
+    <!-- 🔥 INFO -->
+    <div style="font-size:12px;color:#9ca3af;margin-bottom:12px;text-align:center;">
+      You’ll choose your plan after verification
+    </div>
+
+    <button class="btn">Continue</button>
+  </form>
+
+  <div class="link">
+    Already have an account? <a href="/login">Login</a>
+  </div>
+</div>
+
+<script>
+const passInput = document.querySelector('input[name="password"]');
+const confirmInput = document.querySelector('input[name="confirm_password"]');
+const phoneInput = document.querySelector('input[name="contact"]');
+const strengthText = document.getElementById("strengthText");
+
+// PASSWORD STRENGTH
+passInput.addEventListener("input", () => {
+  const val = passInput.value;
+
+  let strength = "Weak";
+  let color = "#ef4444";
+
+  if (val.length >= 8 && /[A-Z]/.test(val) && /[0-9]/.test(val)) {
+    strength = "Strong";
+    color = "#22c55e";
+  } else if (val.length >= 6) {
+    strength = "Medium";
+    color = "#f59e0b";
+  }
+
+  strengthText.textContent = "Strength: " + strength;
+  strengthText.style.color = color;
+});
+
+// PHONE
+phoneInput.addEventListener("input", () => {
+  phoneInput.value = phoneInput.value.replace(/\D/g, '').slice(0, 10);
+});
+
+// VALIDATION
+function validateSignup() {
+  const pass = passInput.value;
+  const confirm = confirmInput.value;
+  const phone = phoneInput.value;
+
+  // ❌ WEAK PASSWORD BLOCK
+  if (pass.length < 6) {
+    strengthText.textContent = "Password is too weak";
+    strengthText.style.color = "#ef4444";
+    passInput.classList.add("shake");
+    setTimeout(() => passInput.classList.remove("shake"), 300);
+    return false;
+  }
+
+  // ❌ MISMATCH
+  if (pass !== confirm) {
+    confirmInput.classList.add("shake");
+    setTimeout(() => confirmInput.classList.remove("shake"), 300);
+    return false;
+  }
+
+  // ❌ PHONE INVALID
+  if (phone.length !== 10) {
+    phoneInput.classList.add("shake");
+    setTimeout(() => phoneInput.classList.remove("shake"), 300);
+    return false;
+  }
+
+  return true;
+}
+
+// LOADER (UNCHANGED)
+function showLoader() {
+  const loader = document.createElement("div");
+
+  loader.innerHTML = `
+    <div style="
+      position:fixed;
+      inset:0;
+      background:#020617;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      flex-direction:column;
+      z-index:9999;
+      color:white;
+    ">
+      <div class="loader"></div>
+      <p style="margin-top:15px;color:#9ca3af;">Creating your account...</p>
+    </div>
+
+    <style>
+      .loader {
+        width:50px;
+        height:50px;
+        border:5px solid #1e293b;
+        border-top:5px solid #6366f1;
+        border-radius:50%;
+        animation:spin 1s linear infinite;
+      }
+      @keyframes spin {
+        100% { transform:rotate(360deg); }
+      }
+    </style>
+  `;
+
+  document.body.appendChild(loader);
+  return true;
+}
+</script>
+
+</body>
+</html>

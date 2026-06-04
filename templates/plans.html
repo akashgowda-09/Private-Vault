@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Select Plan</title>
+
+<style>
+body {
+  margin:0;
+  font-family:system-ui;
+  background:#020617;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.container {
+  background:#111827;
+  padding:30px;
+  border-radius:16px;
+  width:500px;
+  text-align:center;
+  border:1px solid #334155;
+}
+
+.plans {
+  display:flex;
+  gap:15px;
+  margin-top:20px;
+}
+
+.card {
+  flex:1;
+  padding:15px;
+  border-radius:12px;
+  border:1px solid #334155;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.card:hover {
+  border-color:#6366f1;
+}
+
+.selected {
+  border:2px solid #6366f1;
+}
+
+button {
+  margin-top:20px;
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  background:linear-gradient(90deg,#6a5cff,#7b6cff);
+  color:white;
+  cursor:pointer;
+}
+
+.duration {
+  margin-top:15px;
+}
+
+.duration button {
+  margin:5px;
+  padding:8px 12px;
+  border-radius:6px;
+  border:none;
+  cursor:pointer;
+  background:#1f2937;
+}
+
+.duration .active {
+  background:#6366f1;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2>Select Your Plan</h2>
+
+  <!-- duration -->
+  <div class="duration" id="durationBox">
+    <button id="dur6" class="active" onclick="setDuration('6m')">6 Months</button>
+    <button id="dur1" onclick="setDuration('12m')">12 Months</button>
+  </div>
+
+  <!-- plans -->
+  <div class="plans">
+
+    <div class="card selected" data-plan="free" onclick="selectPlan(this)">
+      <h3>Free</h3>
+      <p>500MB</p>
+      <p>₹0</p>
+    </div>
+
+    <div class="card" data-plan="2gb" onclick="selectPlan(this)">
+      <h3>2GB</h3>
+      <p id="price-2gb">₹2394</p>
+    </div>
+
+    <div class="card" data-plan="5gb" onclick="selectPlan(this)">
+      <h3>5GB</h3>
+      <p id="price-5gb">₹3594</p>
+    </div>
+
+  </div>
+
+  <button onclick="subscribePlan()">Continue</button>
+
+</div>
+
+<script>
+let selectedPlan = "free";
+let currentDuration = "6m";
+
+function selectPlan(el) {
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+
+  selectedPlan = el.dataset.plan;
+
+  // 🔥 hide duration for free
+  if (selectedPlan === "free") {
+    document.getElementById("durationBox").style.display = "none";
+  } else {
+    document.getElementById("durationBox").style.display = "block";
+  }
+}
+
+function setDuration(d) {
+  currentDuration = d;
+
+  document.getElementById("dur6").classList.toggle("active", d === "6m");
+  document.getElementById("dur1").classList.toggle("active", d === "12m");
+
+  document.getElementById("price-2gb").innerText =
+    d === "6m" ? "₹2394" : "₹4068";
+
+  document.getElementById("price-5gb").innerText =
+    d === "6m" ? "₹3594" : "₹6108";
+}
+
+async function subscribePlan() {
+  await fetch("/activate-plan", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      plan:selectedPlan,
+      duration:currentDuration
+    })
+  });
+
+  window.location.href = "/dashboard";
+}
+</script>
+
+</body>
+</html>

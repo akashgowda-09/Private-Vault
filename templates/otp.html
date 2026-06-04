@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OTP Verify</title>
+
+<style>
+body {
+  margin:0;
+  font-family:system-ui;
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+/* CARD */
+.card {
+  background: rgba(17,24,39,0.9);
+  backdrop-filter: blur(12px);
+  padding:30px;
+  border-radius:20px;
+  text-align:center;
+  width:320px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.7);
+  border:1px solid rgba(99,102,241,0.2);
+}
+
+/* TITLE */
+h2 {
+  margin-bottom:8px;
+}
+
+/* MESSAGE */
+.msg {
+  font-size:13px;
+  margin-bottom:10px;
+  color:#9ca3af;
+}
+.msg.error { color:#ef4444; }
+
+/* OTP BOX */
+.otp-box {
+  display:flex;
+  justify-content:space-between;
+  margin:20px 0;
+}
+
+.otp-box input {
+  width:42px;
+  height:52px;
+  text-align:center;
+  font-size:20px;
+  border-radius:10px;
+  background:#020617;
+  border:1px solid #334155;
+  color:white;
+}
+
+.otp-box input:focus {
+  border-color:#6366f1;
+  box-shadow:0 0 0 2px rgba(99,102,241,0.2);
+}
+
+/* BUTTON */
+.btn {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(90deg,#6366f1,#818cf8);
+  color:white;
+  cursor:pointer;
+  font-weight:600;
+}
+
+/* RESEND */
+.resend {
+  margin-top:10px;
+  font-size:13px;
+  color:#9ca3af;
+}
+
+.resend a {
+  color:#818cf8;
+  text-decoration:none;
+}
+
+/* SHAKE */
+.shake {
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0%{transform:translateX(0);}
+  25%{transform:translateX(-5px);}
+  50%{transform:translateX(5px);}
+  75%{transform:translateX(-5px);}
+  100%{transform:translateX(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card" id="card">
+  <h2>Verify OTP</h2>
+
+  <!-- 🔥 EMAIL DISPLAY -->
+  <div class="msg">
+    OTP sent to <b>{{ email }}</b>
+  </div>
+
+  <!-- 🔥 ERROR MESSAGE -->
+  <div id="msg" class="msg"></div>
+
+  <form id="otpForm" method="POST" action="/verify">
+    <div class="otp-box">
+      <input maxlength="1">
+      <input maxlength="1">
+      <input maxlength="1">
+      <input maxlength="1">
+      <input maxlength="1">
+      <input maxlength="1">
+    </div>
+
+    <input type="hidden" name="otp" id="otpValue">
+
+    <button class="btn">Verify</button>
+  </form>
+
+  <div class="resend">
+    Resend in <span id="timer">30</span>s
+  </div>
+</div>
+
+<script>
+// 🔥 MESSAGE HELPER
+function showMsg(text, type="error") {
+  const el = document.getElementById("msg");
+  el.textContent = text;
+  el.className = "msg " + type;
+}
+
+// auto focus (UNCHANGED)
+const inputs = document.querySelectorAll(".otp-box input");
+
+inputs.forEach((input, i) => {
+  input.addEventListener("input", () => {
+    if (input.value && i < inputs.length - 1) {
+      inputs[i + 1].focus();
+    }
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Backspace" && !input.value && i > 0) {
+      inputs[i - 1].focus();
+    }
+  });
+});
+
+// combine otp (ENHANCED VALIDATION)
+document.getElementById("otpForm").addEventListener("submit", function (e) {
+  let otp = "";
+  inputs.forEach(i => otp += i.value);
+
+  if (otp.length !== 6) {
+    e.preventDefault();
+    showMsg("Enter complete OTP");
+    wrongOTP();
+    return;
+  }
+
+  document.getElementById("otpValue").value = otp;
+});
+
+// countdown (UNCHANGED)
+let time = 30;
+const timer = document.getElementById("timer");
+
+const interval = setInterval(() => {
+  time--;
+  timer.textContent = time;
+
+  if (time <= 0) {
+    clearInterval(interval);
+    timer.innerHTML = "<a href='/resend-otp'>Resend OTP</a>";
+  }
+}, 1000);
+
+// 🔥 WRONG OTP ANIMATION (UNCHANGED)
+function wrongOTP() {
+  const card = document.getElementById("card");
+  card.classList.add("shake");
+  setTimeout(() => card.classList.remove("shake"), 300);
+}
+
+// 🔥 SUCCESS ANIMATION (UNCHANGED)
+function successLogin() {
+  document.body.innerHTML = "<h2 style='text-align:center'>Logging in...</h2>";
+  setTimeout(() => {
+    window.location.href = "/dashboard";
+  }, 1500);
+}
+</script>
+
+</body>
+</html>

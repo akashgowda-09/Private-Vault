@@ -1,0 +1,2413 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Private Vault — Cloud Storage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+/* ========== CSS VARIABLES ========== */
+:root {
+  --bg: #0a0e1a;
+  --bg2: #0f1629;
+  --sidebar: #0c1120;
+  --card: #111827;
+  --card2: #1a2236;
+  --border: rgba(99,102,241,0.12);
+  --border2: rgba(255,255,255,0.06);
+  --accent: #6366f1;
+  --accent2: #818cf8;
+  --cyan: #22d3ee;
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --text3: #475569;
+  --shadow: 0 20px 60px rgba(0,0,0,0.5);
+  --shadow2: 0 4px 20px rgba(0,0,0,0.3);
+  --radius: 14px;
+  --radius2: 10px;
+  --sidebar-w: 240px;
+  --topbar-h: 64px;
+  --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+[data-theme="light"] {
+  --bg: #f0f4ff;
+  --bg2: #e8eeff;
+  --sidebar: #ffffff;
+  --card: #ffffff;
+  --card2: #f5f7ff;
+  --border: rgba(99,102,241,0.15);
+  --border2: rgba(0,0,0,0.06);
+  --text: #0f172a;
+  --text2: #475569;
+  --text3: #94a3b8;
+  --shadow: 0 20px 60px rgba(99,102,241,0.08);
+  --shadow2: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* ========== RESET ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+button { cursor: pointer; font-family: inherit; border: none; outline: none; background: none; }
+input, select, textarea { font-family: inherit; outline: none; }
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* ========== LAYOUT ========== */
+.layout { display: flex; height: 100vh; overflow: hidden; }
+
+/* ========== SIDEBAR ========== */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 50;
+  padding: 0 0 16px;
+}
+.sidebar-logo {
+  padding: 20px 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 8px;
+}
+.logo-icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+  flex-shrink: 0;
+}
+.logo-text { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+.logo-text span { color: var(--accent2); }
+
+.sidebar-section { padding: 6px 12px 2px; }
+.sidebar-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--text3);
+  padding: 4px 8px; margin-bottom: 2px;
+}
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--radius2);
+  color: var(--text2); cursor: pointer;
+  transition: all var(--transition);
+  font-size: 13.5px; font-weight: 500;
+  margin-bottom: 1px;
+}
+.sidebar-item:hover { background: var(--border); color: var(--text); }
+.sidebar-item.active {
+  background: rgba(99,102,241,0.15);
+  color: var(--accent2);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.sidebar-item .si-icon { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-item .si-count {
+  margin-left: auto;
+  background: var(--card2);
+  color: var(--text3);
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.sidebar-bottom { margin-top: auto; padding: 12px; }
+.storage-box {
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  padding: 14px;
+  margin-bottom: 8px;
+}
+.storage-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; display: flex; justify-content: space-between; }
+.storage-label span { color: var(--text); font-weight: 600; }
+.storage-bar { height: 6px; background: var(--border2); border-radius: 99px; overflow: hidden; }
+.storage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--cyan));
+  border-radius: 99px;
+  transition: width 0.8s ease;
+}
+.storage-used { font-size: 11px; color: var(--text3); margin-top: 6px; }
+/* GRID LAYOUT */
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+/* LABEL */
+.plan-group-label {
+  grid-column: span 3;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin: 10px 0 4px;
+}
+
+/* CARD */
+.plan-card {
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  background: var(--card);
+  position: relative;
+}
+
+/* HOVER */
+.plan-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+}
+
+/* SELECTED */
+.plan-card.selected {
+  border: 2px solid var(--accent);
+  background: rgba(99,102,241,0.12);
+  box-shadow: 0 6px 18px rgba(99,102,241,0.15);
+}
+
+/* RADIO */
+.plan-radio {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--text3);
+  border-radius: 50%;
+}
+
+.plan-card.selected .plan-radio {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.plan-card.selected .plan-radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+/* TEXT */
+.plan-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.plan-desc {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.plan-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent2);
+  margin-top: 4px;
+}
+.btn-logout {
+  width: 100%;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius2);
+  color: var(--red); font-size: 13.5px; font-weight: 500;
+  transition: all var(--transition);
+}
+.btn-logout:hover { background: rgba(239,68,68,0.1); }
+
+/* ========== MAIN AREA ========== */
+.main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* ========== TOPBAR ========== */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--sidebar);
+  border-bottom: 1px solid var(--border2);
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 24px;
+  position: sticky; top: 0; z-index: 40;
+  flex-shrink: 0;
+}
+.search-wrap {
+  flex: 1; max-width: 400px;
+  position: relative;
+}
+.search-wrap input {
+  width: 100%;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  padding: 8px 14px 8px 36px;
+  color: var(--text); font-size: 13.5px;
+  transition: border-color var(--transition);
+}
+.search-wrap input:focus { border-color: var(--accent); }
+.search-wrap input::placeholder { color: var(--text3); }
+.search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 14px; pointer-events: none; }
+
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.secure-toggle {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12.5px; font-weight: 500;
+  transition: all var(--transition);
+  color: var(--text2);
+}
+.secure-toggle.secure { border-color: rgba(16,185,129,0.4); color: var(--green); background: rgba(16,185,129,0.08); }
+.secure-toggle.insecure { border-color: rgba(239,68,68,0.4); color: var(--red); background: rgba(239,68,68,0.08); }
+.secure-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+.btn-icon {
+  width: 36px; height: 36px;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: var(--text2);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-icon:hover { border-color: var(--accent); color: var(--accent2); }
+/* 🔥 Fix input text visibility */
+.form-input {
+  color: #e5e7eb !important;   /* light text */
+  background: #1e293b;         /* dark input bg (optional if already set) */
+}
+
+/* placeholder text */
+.form-input::placeholder {
+  color: #9ca3af;
+}
+
+/* dropdown text */
+select.form-input {
+  color: #e5e7eb;
+}
+
+/* option text (for dropdown list) */
+select.form-input option {
+  color: #000;  /* dropdown list itself stays readable */
+}
+.form-input {
+  border: 1px solid #334155;
+}
+/* main select text */
+.form-input,
+select.form-input {
+  color: #e5e7eb !important;
+  background-color: #1e293b !important;
+}
+
+/* dropdown list (options) */
+select.form-input option {
+  background-color: #1e293b;  /* dark background */
+  color: #e5e7eb;             /* visible text */
+}
+
+/* when option is selected / hovered */
+select.form-input option:checked {
+  background-color: #6366f1;
+  color: #fff;
+}
+.form-input:focus {
+  border-color: #6366f1;
+  outline: none;
+}
+.profile-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  padding: 6px 12px 6px 6px;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+.profile-btn:hover { border-color: var(--accent); }
+.profile-avatar {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+}
+.profile-name { font-size: 13px; font-weight: 500; }
+.profile-caret { font-size: 10px; color: var(--text3); }
+
+.profile-dropdown {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  box-shadow: var(--shadow);
+  min-width: 180px;
+  overflow: hidden;
+  display: none;
+  z-index: 100;
+}
+.profile-dropdown.open { display: block; animation: fadeDown 0.18s ease; }
+.dropdown-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 13.5px; color: var(--text2);
+  transition: all var(--transition);
+}
+.dropdown-item:hover { background: var(--card2); color: var(--text); }
+.dropdown-divider { height: 1px; background: var(--border2); }
+
+/* ========== CONTENT AREA ========== */
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* ========== UPLOAD ZONE ========== */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  background: rgba(99,102,241,0.02);
+  margin-bottom: 24px;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--accent);
+  background: rgba(99,102,241,0.06);
+}
+.upload-zone-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+.upload-zone h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.upload-zone p { color: var(--text2); font-size: 13px; }
+.upload-zone input[type="file"] { display: none; }
+.btn-upload-trigger {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius2);
+  padding: 8px 18px;
+  font-size: 13.5px; font-weight: 600;
+  margin-top: 14px;
+  transition: all var(--transition);
+}
+.btn-upload-trigger:hover { background: var(--accent2); transform: translateY(-1px); }
+
+/* ========== FILE TABLE ========== */
+.files-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.files-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+.files-meta { font-size: 12.5px; color: var(--text3); }
+
+.file-table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: visible;
+  box-shadow: var(--shadow2);
+}
+.file-table { width: 100%; border-collapse: collapse; }
+.file-table thead th {
+  text-align: left;
+  padding: 11px 16px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border2);
+  background: var(--card2);
+}
+.file-table tbody tr {
+  border-bottom: 1px solid var(--border2);
+  transition: background var(--transition);
+  cursor: default;
+}
+.file-table tbody tr:last-child { border-bottom: none; }
+.file-table tbody tr:hover { background: rgba(99,102,241,0.04); }
+.file-table td { padding: 12px 16px; vertical-align: middle; }
+
+.file-name-cell { display: flex; align-items: center; gap: 12px; }
+.file-type-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.file-name-text { font-size: 13.5px; font-weight: 500; }
+.file-name-ext { font-size: 11px; color: var(--text3); }
+
+.file-size { color: var(--text2); font-size: 13px; }
+.file-secure { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+.file-secure.sec { background: rgba(16,185,129,0.12); color: var(--green); }
+.file-secure.insec { background: rgba(239,68,68,0.1); color: var(--red); }
+
+/* 🔥 DURATION BUTTON FIX */
+.dur-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;   /* visible light gray */
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* ACTIVE */
+.dur-btn.active {
+  background: linear-gradient(90deg,#6366f1,#8b5cf6);
+  color: #ffffff;   /* 🔥 WHITE TEXT */
+  font-weight: 500;
+}
+
+/* HOVER */
+.dur-btn:hover {
+  color: #ffffff;
+}
+
+.dur-btn.active {
+  box-shadow: 0 0 10px rgba(99,102,241,0.5);
+}
+.three-dot-wrap { position: relative; }
+.three-dot-btn {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: var(--text3);
+  transition: all var(--transition);
+  position: relative;
+  z-index: 10;
+}
+.three-dot-btn:hover { background: var(--card2); color: var(--text); }
+.three-dot-menu {
+  position: absolute; right: 0; top: calc(100% + 4px);
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  box-shadow: var(--shadow);
+  min-width: 160px;
+  z-index: 9999;
+  display: none;
+  overflow: hidden;
+}
+.three-dot-menu.open { display: block; animation: fadeDown 0.15s ease; }
+.menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  font-size: 13.5px; color: var(--text2);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.menu-item:hover { background: var(--card2); color: var(--text); }
+.menu-item.danger { color: var(--red); }
+.menu-item.danger:hover { background: rgba(239,68,68,0.08); }
+.menu-divider { height: 1px; background: var(--border2); }
+
+/* ========== EMPTY STATE ========== */
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text3);
+}
+.empty-state .es-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.3; }
+.empty-state p { font-size: 14px; }
+
+/* ========== MODALS ========== */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  z-index: 500;
+  display: none;
+  align-items: center; justify-content: center;
+}
+.modal-backdrop.open { display: flex; animation: fadeIn 0.18s ease; }
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.22s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+}
+.modal-sm { max-width: 400px; }
+.modal-md { max-width: 520px; }
+.modal-lg { max-width: 680px; }
+
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 0;
+  margin-bottom: 20px;
+}
+.modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--text3);
+  transition: all var(--transition);
+}
+.modal-close:hover { background: var(--card2); color: var(--text); }
+.modal-body { padding: 0 24px 24px; }
+
+/* ========== FORM ELEMENTS ========== */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.3px; }
+.form-input {
+  width: 100%;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  padding: 10px 13px;
+  color: var(--text); font-size: 13.5px;
+  transition: border-color var(--transition);
+}
+.form-input:focus { border-color: var(--accent); }
+.form-input:read-only { color: var(--text3); cursor: not-allowed; }
+.form-input::placeholder { color: var(--text3); }
+select.form-input { cursor: pointer; }
+
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius2);
+  padding: 10px 22px;
+  font-size: 13.5px; font-weight: 600;
+  transition: all var(--transition);
+  width: 100%;
+}
+.sub-card {
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.25s ease;
+  background: var(--card);
+}
+
+.sub-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+}
+
+.sub-card.selected {
+  border: 2px solid var(--accent);
+  background: rgba(99,102,241,0.12);
+  box-shadow: 0 6px 18px rgba(99,102,241,0.15);
+}
+.btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+.btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--card2);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  padding: 10px 22px;
+  font-size: 13.5px; font-weight: 600;
+  transition: all var(--transition);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent2); }
+.btn-danger {
+  background: rgba(239,68,68,0.12);
+  color: var(--red);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: var(--radius2);
+  padding: 10px 22px;
+  font-size: 13.5px; font-weight: 600;
+  transition: all var(--transition);
+  cursor: pointer;
+}
+.btn-danger:hover { background: rgba(239,68,68,0.2); }
+.btn-row { display: flex; gap: 10px; }
+.btn-row > * { flex: 1; }
+
+
+
+/* ========== THEME MODAL ========== */
+.theme-options { display: flex; gap: 12px; }
+.theme-card {
+  flex: 1; border: 2px solid var(--border2);
+  border-radius: var(--radius2);
+  padding: 16px 12px;
+  cursor: pointer; text-align: center;
+  transition: all var(--transition);
+}
+.theme-card:hover, .theme-card.selected { border-color: var(--accent); }
+.theme-card .tc-preview {
+  width: 100%; height: 60px; border-radius: 8px;
+  margin-bottom: 10px; overflow: hidden;
+  border: 1px solid var(--border2);
+}
+.theme-card .tc-label { font-size: 13px; font-weight: 600; }
+
+/* ========== SHARE MODAL ========== */
+.share-link-box {
+  display: flex; gap: 8px;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  padding: 10px 12px;
+  margin-top: 14px;
+}
+.share-link-input {
+  flex: 1; background: none; border: none;
+  color: var(--text2); font-size: 12.5px;
+  overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.btn-copy {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: 12px; font-weight: 600;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+.btn-copy:hover { background: var(--accent2); }
+
+/* ========== FILE VIEWER ========== */
+.viewer-body { padding: 0; }
+.viewer-frame { width: 100%; height: 75vh; background: #000; border: none; border-radius: 0 0 var(--radius) var(--radius); }
+.viewer-img { width: 100%; height: 75vh; object-fit: contain; background: #000; display: block; border-radius: 0 0 var(--radius) var(--radius); }
+
+/* ========== UPLOAD LOADER ========== */
+.upload-loader {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: none;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
+}
+.upload-loader.show { display: flex; }
+.loader-ring {
+  width: 60px; height: 60px;
+  border: 3px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.loader-text { font-size: 15px; font-weight: 500; color: var(--text2); }
+
+/* ========== TOAST ========== */
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  z-index: 1000; display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  padding: 12px 16px;
+  font-size: 13.5px;
+  box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 10px;
+  animation: slideRight 0.22s ease;
+  min-width: 260px;
+}
+.toast.success { border-left: 3px solid var(--green); }
+.toast.error { border-left: 3px solid var(--red); }
+.toast.info { border-left: 3px solid var(--accent); }
+
+/* 🔥 PUSH BOTTOM ITEMS PROPERLY */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;        /* 🔥 FORCE FULL HEIGHT */
+}
+
+/* THIS FIXES GAP */
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* PLAN BOX */
+.plan-box {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* PLAN ROW */
+.plan-row {
+  display: flex;
+  justify-content: space-between;
+  color: #e5e7eb;  /* 🔥 brighter */
+  font-weight: 500;
+}
+
+/* EXPIRY TEXT */
+#planExpiry {
+  font-size: 12px;
+  color: #9ca3af;  /* 🔥 readable */
+  margin-top: 4px;
+}
+
+/* STORAGE BOX */
+.storage-box {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* TITLE */
+.storage-title {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #e5e7eb;   /* 🔥 FIX VISIBILITY */
+  margin-bottom: 8px;
+}
+
+/* BAR */
+.storage-bar {
+  height: 6px;
+  background: #1f2937;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* FILL */
+#storageFill {
+  height: 100%;
+  background: linear-gradient(90deg,#6366f1,#8b5cf6);
+  width: 0%;
+}
+
+/* PERCENT */
+#storagePercent {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.search-hit {
+  background: rgba(99,102,241,0.15);
+  outline: 1px solid #6366f1;
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ========== MISC ========== */
+.divider { height: 1px; background: var(--border2); margin: 16px 0; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 99px;
+}
+.badge-indigo { background: rgba(99,102,241,0.15); color: var(--accent2); }
+.col-sm { width: 100px; }
+.col-xs { width: 50px; text-align: right; }
+.text-right { text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- UPLOAD LOADER -->
+<div class="upload-loader" id="uploadLoader">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Uploading your file…</div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ===================== LAYOUT ===================== -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🔒</div>
+      <div class="logo-text">Private<span>Vault</span></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Storage</div>
+      <div class="sidebar-item active" data-filter="all" onclick="setFilter(this,'all')">
+        <span class="si-icon">🗂️</span> All Files
+        <span class="si-count" id="count-all">0</span>
+      </div>
+      <div class="sidebar-item" data-filter="photos" onclick="setFilter(this,'photos')">
+        <span class="si-icon">🖼️</span> Photos
+        <span class="si-count" id="count-photos">0</span>
+      </div>
+      <div class="sidebar-item" data-filter="videos" onclick="setFilter(this,'videos')">
+        <span class="si-icon">🎬</span> Videos
+        <span class="si-count" id="count-videos">0</span>
+      </div>
+      <div class="sidebar-item" data-filter="documents" onclick="setFilter(this,'documents')">
+        <span class="si-icon">📄</span> Documents
+        <span class="si-count" id="count-documents">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:8px;">
+      <div class="sidebar-label">Links</div>
+      <div class="sidebar-item" data-filter="shared" onclick="setFilter(this,'shared')">
+        <span class="si-icon">🔗</span> Shared Links
+      </div>
+    </div>
+    <div class="storage-box" style="margin-bottom:12px;">
+  <div class="storage-label">Plan <span id="planName">FREE</span></div>
+
+  <div class="storage-used" id="planExpiry">
+    Free Plan
+  </div>
+  </div>
+    <div class="sidebar-bottom">
+      <div class="storage-box">
+        <div class="storage-label">Storage Used <span id="storageText">0 B / 0 B</span></div>
+        <div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div>
+        <div class="storage-used" id="storagePercent">0% used</div>
+      </div>
+      <button class="btn-logout" onclick="handleLogout()">
+        <span>🚪</span> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search files…" oninput="handleSearch()"/>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="secure-toggle secure" id="secureToggle" onclick="toggleSecure()">
+          <span class="secure-dot"></span>
+          <span id="secureLabel">Secure</span>
+        </button>
+
+        <button class="btn-icon" id="themeBtn" onclick="openModal('themeModal')" title="Theme">🌙</button>
+
+        <div class="profile-btn" onclick="toggleProfileDropdown(event)">
+          <div class="profile-avatar" id="profileInitial">U</div>
+          <span class="profile-name" id="profileName">User</span>
+          <span class="profile-caret">▾</span>
+          <div class="profile-dropdown" id="profileDropdown">
+            <div class="dropdown-item" onclick="event.stopPropagation(); closeDropdown(); openModal('personalModal')">
+              👤 &nbsp;Personal Info
+            </div>
+            <div class="dropdown-item" onclick="event.stopPropagation(); closeDropdown(); openModal('subscriptionModal')">
+              💎 &nbsp;Subscription
+            </div>
+            <div class="dropdown-item" onclick="event.stopPropagation(); closeDropdown(); openModal('themeModal')">
+              🎨 &nbsp;Theme
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- UPLOAD ZONE -->
+      <div class="upload-zone" id="dropZone">
+        <div class="upload-zone-icon">☁️</div>
+        <h3>Drop files here to upload</h3>
+        <p>or browse from your device</p>
+        <input type="file" id="fileInput" multiple onchange="handleFileSelect(event)" />
+        <button class="btn-upload-trigger" onclick="document.getElementById('fileInput').click()">
+          ⬆️ Choose Files
+        </button>
+      </div>
+
+      <!-- FILES HEADER -->
+      <div class="files-header">
+        <div>
+          <div class="files-title" id="sectionTitle">All Files</div>
+          <div class="files-meta" id="sectionMeta">Loading…</div>
+        </div>
+      </div>
+
+      <!-- FILE TABLE -->
+      <div class="file-table-wrap">
+        <table class="file-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th class="col-sm">Size</th>
+              <th class="col-sm">Security</th>
+              <th class="col-xs">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="fileTableBody">
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">
+                  <div class="es-icon">📂</div>
+                  <p>Loading your files…</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ===================== MODALS ===================== -->
+
+<!-- PERSONAL INFO MODAL -->
+<div class="modal-backdrop" id="personalModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">Personal Info</div>
+      <button class="modal-close" onclick="closeModal('personalModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="pi-name" placeholder="Your full name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input type="text" class="form-input" id="pi-phone"name="contact" placeholder="+91XXXXXXXXXX" maxlength="13" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" id="pi-email" readonly placeholder="email@example.com" />
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Email cannot be changed.</div>
+      </div>
+      <div class="divider"></div>
+      <button class="btn-primary" onclick="saveProfile()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUBSCRIPTION MODAL -->
+<div class="modal-backdrop" id="subscriptionModal">
+  <div class="modal modal-md">
+    <div class="modal-header">
+      <div class="modal-title">Subscription Plans</div>
+      <button class="modal-close" onclick="closeModal('subscriptionModal')">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- 🔥 DURATION TOGGLE -->
+      <div style="display:flex;justify-content:center;margin-bottom:18px;">
+        <div style="
+          display:flex;
+          background:var(--card2);
+          border:1px solid var(--border2);
+          border-radius:999px;
+          overflow:hidden;
+        ">
+          <button id="dur6" onclick="setDuration('6m')" class="dur-btn active">6 Months</button>
+          <button id="dur1" onclick="setDuration('12m')" class="dur-btn">1 Year (15% OFF)</button>
+        </div>
+      </div>
+
+      <!-- 🔥 PLAN CARDS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+
+        <!-- FREE -->
+        <div class="sub-card selected" data-plan="free" onclick="selectPlan(this)">
+          <h3>Free</h3>
+          <p class="sub-size">500 MB</p>
+          <p class="sub-price">₹0</p>
+          <p class="sub-desc">Basic features</p>
+        </div>
+
+        <!-- 2GB -->
+        <div class="sub-card" data-plan="2gb" onclick="selectPlan(this)">
+          <h3>2 GB</h3>
+          <p class="sub-size">Standard</p>
+          <p class="sub-price" id="price-2gb">₹2394</p>
+          <p class="sub-desc">₹399/month</p>
+        </div>
+
+        <!-- 5GB -->
+        <div class="sub-card" data-plan="5gb" onclick="selectPlan(this)">
+          <h3>5 GB</h3>
+          <p class="sub-size">Pro</p>
+          <p class="sub-price" id="price-5gb">₹3594</p>
+          <p class="sub-desc">₹599/month</p>
+        </div>
+
+      </div>
+
+      <div class="divider"></div>
+
+      <button class="btn-primary" onclick="subscribePlan()">✨ Activate Plan</button>
+
+    </div>
+  </div>
+</div>
+
+<!-- THEME MODAL -->
+<div class="modal-backdrop" id="themeModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">Choose Theme</div>
+      <button class="modal-close" onclick="closeModal('themeModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="theme-options">
+        <div class="theme-card" id="themeCardDark" onclick="setTheme('dark')">
+          <div class="tc-preview" style="background:linear-gradient(135deg,#0a0e1a 50%,#111827);"></div>
+          <div class="tc-label">🌙 Dark</div>
+        </div>
+        <div class="theme-card" id="themeCardLight" onclick="setTheme('light')">
+          <div class="tc-preview" style="background:linear-gradient(135deg,#f0f4ff 50%,#ffffff);"></div>
+          <div class="tc-label">☀️ Light</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;font-size:12px;color:var(--text3);">Theme preference is saved automatically.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<!-- SHARE MODAL -->
+<div class="modal-backdrop" id="shareModal">
+  <div class="modal modal-md" style="max-width:480px;">
+    
+    <div class="modal-header" style="padding:16px 20px 0;">
+      <div class="modal-title" style="font-size:16px;">Share File</div>
+      <button class="modal-close" onclick="closeModal('shareModal')">✕</button>
+    </div>
+
+    <div class="modal-body" style="padding:0 20px 20px;">
+
+      <!-- Access -->
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label" style="font-size:11px;">Access</label>
+        <select class="form-input" id="share-access" style="padding:8px;font-size:12.5px;">
+          <option value="view">View only</option>
+          <option value="download">View + Download</option>
+        </select>
+      </div>
+
+      <!-- Start mode -->
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label" style="font-size:11px;">Start Mode</label>
+        <select class="form-input" id="share-start" style="padding:8px;font-size:12.5px;">
+          <option value="creation">From creation</option>
+          <option value="first_open">From first open</option>
+        </select>
+      </div>
+
+      <!-- Expiry + Limit -->
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label" style="font-size:11px;">Expiry & Limit</label>
+
+        <div style="display:flex;gap:8px;align-items:center;">
+          
+          <input type="number"
+                 class="form-input"
+                 id="share-expiry-val"
+                 min="1"
+                 value="7"
+                 style="width:65px;padding:7px;font-size:12px;" />
+
+          <select class="form-input"
+                  id="share-expiry-unit"
+                  style="width:95px;padding:7px;font-size:12px;">
+            <option value="minutes">Min</option>
+            <option value="hours">Hr</option>
+            <option value="days" selected>Days</option>
+            <option value="permanent">∞</option>
+          </select>
+
+          <input type="number"
+                 class="form-input"
+                 id="share-download-limit"
+                 placeholder="Limit"
+                 min="1"
+                 style="width:70px;padding:7px;font-size:12px;" />
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label" style="font-size:11px;">Password</label>
+        <input type="password"
+               class="form-input"
+               id="share-password"
+               placeholder="Optional"
+               style="padding:8px;font-size:12.5px;" />
+      </div>
+
+      <!-- Button -->
+      <button class="btn-primary"
+              style="padding:8px;font-size:12.5px;"
+              onclick="generateShareLink()">
+        🔗 Generate Link
+      </button>
+
+      <!-- Link box -->
+      <div class="share-link-box"
+           id="shareLinkBox"
+           style="display:none;margin-top:10px;padding:8px;">
+        
+        <input class="share-link-input"
+               id="shareLinkInput"
+               readonly
+               style="font-size:11.5px;" />
+
+        <button class="btn-copy"
+                style="padding:4px 10px;font-size:11px;"
+                onclick="copyShareLink()">Copy</button>
+      </div>
+
+      <!-- 🔥 Stats (separate, clean) -->
+      <div id="shareStats"
+           style="display:none;margin-top:6px;font-size:11.5px;color:#9ca3af;">
+        <div>👁 Views: <span id="shareViews">0</span></div>
+        <div>🕒 Last Open: <span id="shareLastOpen">-</span></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-backdrop" id="deleteModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">Delete File</div>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text2);margin-bottom:8px;">Are you sure you want to delete <strong id="deleteFileName" style="color:var(--text)"></strong>?</p>
+      <p style="font-size:12.5px;color:var(--text3);margin-bottom:20px;">This action cannot be undone.</p>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+        <button class="btn-danger" onclick="confirmDelete()">🗑 Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FILE VIEWER MODAL -->
+<div class="modal-backdrop" id="viewerModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="viewerTitle">File Preview</div>
+      <button class="modal-close" onclick="closeModal('viewerModal')">✕</button>
+    </div>
+    <div class="modal-body viewer-body" id="viewerBody">
+      <div style="padding:40px;text-align:center;color:var(--text3);">Loading preview…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== JAVASCRIPT ===================== -->
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+let allFiles = [];
+let allShares = [];
+let currentFilter = 'all';
+let isSecure = true;
+let pendingDeleteId = null;
+let pendingShareId = null;
+let userProfile = { name: 'User', email: '', phone: '' };
+let selectedPlan = "free";
+let duration = "6m";
+let currentPlan = "free";
+let currentDuration = "6m";
+const levels = { free: 0, "2gb": 1, "5gb": 2 };
+
+// ============================================================
+//  INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  const savedMode = localStorage.getItem("upload_mode");
+
+  if (savedMode === "insecure") {
+    isSecure = false;
+
+    const btn = document.getElementById('secureToggle');
+    const lbl = document.getElementById('secureLabel');
+
+    btn.className = 'secure-toggle insecure';
+    lbl.textContent = 'Insecure';
+  }
+
+  applyTheme(localStorage.getItem('vault_theme') || 'dark');
+  loadDashboard();
+  loadPlanInfo();
+  setupDragDrop();
+  loadProfile();
+
+  document.addEventListener('click', closeAllMenus);
+
+  // 🔥 FIX: Permanent expiry handling
+  const expiryUnit = document.getElementById('share-expiry-unit');
+  const expiryVal  = document.getElementById('share-expiry-val');
+
+  if (expiryUnit && expiryVal) {
+    expiryUnit.addEventListener('change', function () {
+      if (this.value === 'permanent') {
+        expiryVal.disabled = true;
+        expiryVal.value = '';
+      } else {
+        expiryVal.disabled = false;
+        if (!expiryVal.value) expiryVal.value = 1;
+      }
+    });
+  }
+
+  // 🔥 PHONE FORMAT FIX
+  const phoneInput = document.getElementById('pi-phone');
+
+  if (phoneInput) {
+    phoneInput.addEventListener('input', function () {
+      let val = this.value.replace(/\D/g, '');
+
+      if (val.startsWith('91')) val = val.slice(2);
+      val = val.slice(0, 10);
+
+      this.value = '+91' + val;
+    });
+  }
+
+  // =========================
+  // 🔥 ADD THIS (AUTO REFRESH FIX)
+  // =========================
+  setInterval(async () => {
+    if (currentFilter === 'shared') {
+      console.log("AUTO REFRESH RUNNING"); // debug
+
+      await loadShares();       // fetch latest data
+      renderSharedLinks();      // re-render table
+    }
+  }, 5000);
+
+});
+
+// ============================================================
+//  API BASE URL — set this to your backend origin
+// ============================================================
+const API_BASE = '';
+
+async function api(method, path, body = null) {
+  const opts = {
+  method,
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include' // for cookies / session auth
+     };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API_BASE + path, opts);
+  if (!res.ok) {
+  const text = await res.text();
+  throw new Error(text || `${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+// ============================================================
+//  DASHBOARD LOAD
+// ============================================================
+async function loadDashboard() {
+  try {
+    const res = await fetch('/api/files', {
+      credentials: 'include'
+    });
+    console.log("FETCH STATUS:", res.status);
+    let data;
+try {
+  data = await res.json();
+} catch (e) {
+  console.error("Invalid JSON response");
+  throw e;
+}
+    allFiles = data.files || [];
+
+    if (data.storage) {
+      updateStorageUI(data.storage);
+    }
+
+    // 🔥 FIX: UPDATE PLAN FROM SAME API
+    if (data.user_plan) {
+      currentPlan = data.user_plan;
+
+      document.getElementById("planName").innerText =
+        currentPlan.toUpperCase();
+    }
+
+    if (data.plan_expiry) {
+      const d = new Date(data.plan_expiry);
+      document.getElementById("planExpiry").innerText =
+        "Expires: " + d.toLocaleDateString();
+    } else {
+      document.getElementById("planExpiry").innerText =
+        "Lifetime Free Plan";
+    }
+
+    renderFiles();
+    updateCounts();
+
+  } catch (e) {
+    setTableEmpty('Could not load files.');
+    updateCounts();
+    console.error(e);
+  }
+}
+
+function applyProfileUI() {
+  document.getElementById('profileName').textContent = userProfile.name || 'User';
+  document.getElementById('profileInitial').textContent = (userProfile.name || 'U')[0].toUpperCase();
+  document.getElementById('pi-name').value = userProfile.name || '';
+  document.getElementById('pi-email').value = userProfile.email || '';
+  document.getElementById('pi-phone').value = userProfile.phone || '';
+}
+
+function updateStorageUI(storage) {
+  const pct = storage.percent || 0;
+  document.getElementById('storageFill').style.width = pct + '%';
+  document.getElementById('storagePercent').textContent = pct + '% used';
+  document.getElementById('storageText').textContent =
+    (storage.used_label || '0 B') + ' / ' + (storage.total_label || '0 B');
+}
+async function loadPlanInfo() {
+  const res = await fetch("/get-profile", {
+    credentials: "include"
+  });
+
+  const data = await res.json();
+
+  currentPlan = data.plan || "free";
+
+  const plan = currentPlan.toUpperCase();
+  const expiry = data.plan_expiry;
+
+  document.getElementById("planName").innerText = plan;
+
+  if (plan === "FREE") {
+    document.getElementById("planExpiry").innerText = "Lifetime Free Plan";
+  } else if (expiry) {
+    const d = new Date(expiry);
+    document.getElementById("planExpiry").innerText =
+      "Expires: " + d.toLocaleDateString();
+  } else {
+    document.getElementById("planExpiry").innerText = "No expiry";
+  }
+
+  // 🔥 highlight selected plan
+  document.querySelectorAll('.sub-card').forEach(c => {
+    c.classList.remove('selected');
+  });
+
+  const active = document.querySelector(`[data-plan="${currentPlan}"]`);
+  if (active) active.classList.add('selected');
+}
+// ============================================================
+//  FILE RENDERING
+// ============================================================
+const PHOTO_EXT  = ['jpg','jpeg','png','gif','webp','svg','bmp','tiff','avif'];
+const VIDEO_EXT  = ['mp4','mkv','avi','mov','wmv','flv','webm','m4v'];
+const DOC_EXT    = ['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','csv','md','odt'];
+
+function getCategory(filename) {
+  const ext = (filename.split('.').pop() || '').toLowerCase();
+  if (PHOTO_EXT.includes(ext)) return 'photos';
+  if (VIDEO_EXT.includes(ext)) return 'videos';
+  if (DOC_EXT.includes(ext)) return 'documents';
+  return 'other';
+}
+
+function getFileIcon(filename) {
+  const cat = getCategory(filename);
+  const colors = {
+    photos: { bg: 'rgba(34,211,238,0.12)', emoji: '🖼️' },
+    videos: { bg: 'rgba(251,146,60,0.12)', emoji: '🎬' },
+    documents: { bg: 'rgba(99,102,241,0.12)', emoji: '📄' },
+    other: { bg: 'rgba(148,163,184,0.1)', emoji: '📁' }
+  };
+  return colors[cat] || colors.other;
+}
+
+function updatePlanUI(data) {
+  const plan = data.user_plan || "free";
+
+  document.getElementById("planName").textContent = plan.toUpperCase();
+
+  if (data.plan_expiry) {
+    const d = new Date(data.plan_expiry);
+    document.getElementById("planExpiry").textContent =
+      "Expires: " + d.toLocaleDateString();
+  } else {
+    document.getElementById("planExpiry").textContent = "Free Plan";
+  }
+}
+
+function formatSize(bytes) {
+  if (!bytes || bytes === 0) return '—';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+  return (bytes / 1073741824).toFixed(2) + ' GB';
+}
+
+function getFilteredFiles() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+
+  return allFiles.filter(f => {
+    const name = (f.filename || f.name || '').toLowerCase();
+
+    const matchSearch = !q || name.includes(q);
+
+    let matchFilter = true;
+
+    // 🔥 SAFE CATEGORY DETECTION (fallback if getCategory fails)
+    const category = typeof getCategory === "function"
+      ? getCategory(name)
+      : (
+          /\.(jpg|jpeg|png|gif|webp)$/.test(name) ? 'photos' :
+          /\.(mp4|mkv|avi|mov)$/.test(name) ? 'videos' :
+          /\.(pdf|doc|docx|txt|ppt|pptx|xls|xlsx)$/.test(name) ? 'documents' :
+          'other'
+        );
+
+    if (currentFilter === 'photos')    matchFilter = category === 'photos';
+    if (currentFilter === 'videos')    matchFilter = category === 'videos';
+    if (currentFilter === 'documents') matchFilter = category === 'documents';
+
+    return matchSearch && matchFilter;
+  });
+}
+
+function renderFiles() {
+  const filtered = getFilteredFiles();
+  const tbody = document.getElementById('fileTableBody');
+
+  // 🔥 handle shared view
+  if (currentFilter === 'shared') {
+    renderSharedLinks();
+    return;
+  }
+
+  // 🔥 RESET HEADER FOR FILES (ADD THIS)
+  const thead = document.querySelector('thead tr');
+  thead.innerHTML = `
+    <th>Name</th>
+    <th class="col-sm">Size</th>
+    <th class="col-sm">Security</th>
+    <th class="col-xs">Actions</th>
+  `;
+
+  const titles = { all: 'All Files', photos: 'Photos', videos: 'Videos', documents: 'Documents', shared: 'Shared Links' };
+  document.getElementById('sectionTitle').textContent = titles[currentFilter] || 'Files';
+  document.getElementById('sectionMeta').textContent = filtered.length + ' file' + (filtered.length !== 1 ? 's' : '');
+
+  if (!filtered.length) {
+    setTableEmpty(currentFilter === 'all'
+      ? 'No files uploaded yet. Drop a file above to get started.'
+      : 'No files in this category.');
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(f => {
+    const name = f.filename || f.name || 'Untitled';
+    const icon = getFileIcon(name);
+    const size = formatSize(f.size);
+    const secure = f.is_encrypted === true;
+
+    const fileId = f.file_id ?? f.id ?? f._id;
+
+    return `
+<tr>
+  <td>
+    <div class="file-name-cell">
+      <div class="file-type-icon" style="background:${icon.bg}">${icon.emoji}</div>
+      <div>
+        <div class="file-name-text">${escHtml(name)}</div>
+        <div class="file-name-ext">
+           ${name.includes('.') ? '.' + name.split('.').pop().toLowerCase() : ''}</div>
+        </div>
+    </div>
+  </td>
+  <td class="file-size">${size}</td>
+  <td>
+    <span class="file-secure ${secure ? 'sec' : 'insec'}">
+      ${secure ? '🔒 Secure' : '🔓 Open'}
+    </span>
+  </td>
+  <td class="text-right">
+    <div class="three-dot-wrap">
+      <button class="three-dot-btn" onclick="toggleMenu(event,'menu-${fileId}')">⋮</button>
+      <div class="three-dot-menu" id="menu-${fileId}">
+        <div class="menu-item" onclick="viewFile('${fileId}','${escHtml(name)}','',${f.is_encrypted})">👁 View</div>
+        <div class="menu-item" onclick="downloadFile('${fileId}')">⬇️ Download</div>
+        <div class="menu-item" onclick="openShare('${fileId}')">🔗 Share</div>
+        <div class="menu-divider"></div>
+        <div class="menu-item danger" onclick="openDelete('${fileId}','${escHtml(name)}')">🗑 Delete</div>
+      </div>
+    </div>
+  </td>
+</tr>`;
+  }).join('');
+}
+
+function renderSharedLinks() {
+  const tbody = document.getElementById('fileTableBody');
+  const thead = document.querySelector('thead tr');
+
+  thead.innerHTML = `
+    <th>Name</th>
+    <th>Link</th>
+    <th>Expiry</th>
+    <th>Status</th>
+    <th>Views</th>
+    <th>Last Open</th>
+    <th class="col-xs">Actions</th>
+  `;
+
+  if (!allShares.length) {
+    setTableEmpty('No shared links yet.');
+    return;
+  }
+
+  tbody.innerHTML = allShares.map(s => {
+
+    // 🔥 STATUS FIX
+    let status = '';
+    if (s.status === 'waiting') {
+      status = '<span style="color:#facc15;">Waiting</span>';
+    } else if (s.status === 'expired') {
+      status = '<span style="color:#f87171;">Expired</span>';
+    } else if (s.active === false) {
+      status = '<span style="color:#f87171;">Paused</span>';
+    } else {
+      status = '<span style="color:#4ade80;">Active</span>';
+    }
+
+    return `
+<tr>
+  <td>${s.file_name}</td>
+
+  <td>
+    <a href="#" onclick="openShareView('${s.share_id}'); return false;">Open</a>
+    <button onclick="copyLink('${s.link}')" style="margin-left:6px;">📋</button>
+  </td>
+
+  <!-- 🔥 FIXED EXPIRY COLUMN -->
+  <td class="expiry-cell" data-remaining="${s.remaining != null ? s.remaining : ''}">
+    ${
+      s.status === "waiting"
+        ? "Waiting"
+        : s.remaining != null
+          ? "--"
+          : "Permanent"
+    }
+  </td>
+
+  <td>${status}</td>
+
+  <td>${s.views || 0}</td>
+
+  <td>
+    ${s.last_accessed 
+      ? new Date(s.last_accessed).toLocaleString() 
+      : "-"}
+  </td>
+
+  <td class="text-right" style="display:flex;gap:8px;justify-content:flex-end;align-items:center;">
+
+    <button 
+      onclick="toggleShare('${s.share_id}', ${s.active !== false})"
+      style="
+        padding:5px 12px;
+        border-radius:8px;
+        border:1px solid ${s.active === false ? '#22c55e' : '#ef4444'};
+        background:${s.active === false ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)'};
+        color:${s.active === false ? '#22c55e' : '#ef4444'};
+        font-size:12px;
+        font-weight:500;
+        cursor:pointer;
+      "
+    >
+      ${s.active === false ? 'Enable' : 'Disable'}
+    </button>
+
+    <button 
+      onclick="deleteShare('${s.share_id}')"
+      style="
+        width:28px;
+        height:28px;
+        border-radius:6px;
+        border:none;
+        background:rgba(239,68,68,0.15);
+        color:#ef4444;
+        font-size:14px;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      "
+    >
+      🗑
+    </button>
+
+  </td>
+</tr>`;
+  }).join('');
+
+  // 🔥 IMPORTANT: START COUNTDOWN AFTER RENDER
+  startLiveCountdown();
+}
+function startLiveCountdown() {
+  setInterval(() => {
+    document.querySelectorAll(".expiry-cell").forEach(el => {
+
+      let remaining = parseInt(el.getAttribute("data-remaining"));
+      if (isNaN(remaining)) return;
+
+      if (remaining <= 0) {
+        el.innerText = "Expired";
+        return;
+      }
+
+      // 🔥 FIXED FORMAT
+      const days = Math.floor(remaining / 86400);
+      const hours = Math.floor((remaining % 86400) / 3600);
+      const minutes = Math.floor((remaining % 3600) / 60);
+      const seconds = remaining % 60;
+
+      if (days > 0) {
+        el.innerText = `${days}d ${hours}h`;
+      } else if (hours > 0) {
+        el.innerText = `${hours}h ${minutes}m`;
+      } else {
+        el.innerText = `${minutes}m ${seconds}s`;
+      }
+
+      // 🔥 decrease
+      el.setAttribute("data-remaining", remaining - 1);
+
+    });
+  }, 1000);
+}
+function openShareView(shareId) {
+  window.open('/share/' + shareId, '_blank');
+}
+async function toggleShare(id, isActive) {
+  try {
+
+    // 🔥 CONFIRM ONLY WHEN ENABLING
+    if (!isActive) {
+      const confirmEnable = confirm("Enable this link again?");
+      if (!confirmEnable) return;
+    }
+
+    const res = await fetch(API_BASE + `/toggle-share/${id}`, {
+      method: "POST",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    // 🔥 BETTER FEEDBACK
+    if (data.active) {
+      toast("Link Enabled", "success");
+    } else {
+      toast("Link Disabled", "warning");
+    }
+
+    await loadShares();
+    renderSharedLinks();
+
+  } catch (e) {
+    toast("Error toggling link", "error");
+  }
+}
+// ================= SUBSCRIPTION FIX =================
+function selectPlan(card) {
+  const plan = card.dataset.plan;
+
+  if (levels[plan] < levels[currentPlan]) {
+    toast("Cannot downgrade plan", "error");
+    return;
+  }
+
+  document.querySelectorAll('.sub-card').forEach(c => {
+    c.classList.remove('selected');
+  });
+
+  card.classList.add('selected');
+
+  selectedPlan = plan;
+
+  console.log("SELECTED:", selectedPlan);
+}
+async function copyLink(link) {
+  await navigator.clipboard.writeText(link);
+  toast('Link copied!', 'success');
+}
+
+function setTableEmpty(msg) {
+  document.getElementById('fileTableBody').innerHTML = `
+    <tr><td colspan="5">
+      <div class="empty-state">
+        <div class="es-icon">📂</div>
+        <p>${escHtml(msg)}</p>
+      </div>
+    </td></tr>`;
+  document.getElementById('sectionMeta').textContent = '0 files';
+}
+
+
+function updateCounts() {
+  document.getElementById('count-all').textContent       = allFiles.length;
+  document.getElementById('count-photos').textContent    = allFiles.filter(f => getCategory(f.filename||f.name||'') === 'photos').length;
+  document.getElementById('count-videos').textContent    = allFiles.filter(f => getCategory(f.filename||f.name||'') === 'videos').length;
+  document.getElementById('count-documents').textContent = allFiles.filter(f => getCategory(f.filename||f.name||'') === 'documents').length;
+}
+
+async function setFilter(el, filter) {
+  currentFilter = filter;
+
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+
+  // 🔥 IMPORTANT FIX
+  if (filter === 'shared') {
+    await loadShares();
+  }
+
+  renderFiles();
+}
+
+// ============================================================
+//  UPLOAD
+// ============================================================
+function setupDragDrop() {
+  const zone = document.getElementById('dropZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length) uploadFiles(files);
+  });
+}
+
+function handleFileSelect(event) {
+  const files = Array.from(event.target.files);
+  if (files.length) uploadFiles(files);
+}
+
+async function deleteShare(id) {
+  if (!confirm("Delete this shared link?")) return;
+
+  try {
+    await fetch(API_BASE + `/delete-share/${id}`, {
+      credentials: 'include'
+    });
+
+    toast("Share link deleted", "success");
+
+    // 🔥 reload shares
+    await loadShares();
+    renderFiles();
+
+  } catch (e) {
+    toast("Failed to delete share link", "error");
+  }
+}
+
+async function uploadFiles(files) {
+  showLoader(true);
+  let uploaded = 0;
+  for (const file of files) {
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('mode', isSecure ? 'secure' : 'insecure');
+      const res = await fetch(API_BASE + '/upload', {
+      method: 'POST',
+      body: fd,
+      credentials: 'include'
+      });
+      if (!res.ok) {
+       throw new Error('Upload failed');
+       }
+      uploaded++;
+    } catch (e) {
+      toast('Failed to upload: ' + file.name, 'error');
+    }
+  }
+  showLoader(false);
+  if (uploaded > 0) {
+    toast(uploaded + ' file(s) uploaded successfully!', 'success');
+    await loadDashboard();
+  }
+  document.getElementById('fileInput').value = '';
+}
+
+function showLoader(show) {
+  document.getElementById('uploadLoader').classList.toggle('show', show);
+}
+
+async function loadShares() {
+  try {
+    const res = await fetch("/api/shares", {
+      credentials: "include",
+      cache: "no-store"
+    });
+
+    const data = await res.json();
+    allShares = data.shares || [];
+
+  } catch (e) {
+    console.error("loadShares error:", e);
+  }
+}
+
+
+// ============================================================
+//  FILE ACTIONS
+// ============================================================
+async function viewFile(id, name, cloudUrl, isEncrypted) {
+  closeAllMenus();
+
+  document.getElementById('viewerTitle').textContent = name;
+
+  const ext = (name.split('.').pop() || '').toLowerCase();
+
+  // 🔥 FIX: INSECURE → SAFE DIRECT OPEN
+  if (!isEncrypted) {
+    window.open('/file/' + id, '_blank');   // ✅ FIX
+  return;
+  }
+
+  // 🔐 SECURE → UNCHANGED
+  document.getElementById('viewerBody').innerHTML =
+    '<div style="padding:40px;text-align:center;color:var(--text3);">Loading preview…</div>';
+
+  openModal('viewerModal');
+
+  const url = '/file/' + id;
+
+  if (PHOTO_EXT.includes(ext)) {
+    document.getElementById('viewerBody').innerHTML =
+      `<img class="viewer-img" src="${url}" />`;
+
+  } else if (ext === 'pdf') {
+    document.getElementById('viewerBody').innerHTML =
+      `<iframe class="viewer-frame" src="${url}"></iframe>`;
+
+  } else if (VIDEO_EXT.includes(ext)) {
+    document.getElementById('viewerBody').innerHTML =
+      `<video class="viewer-frame" src="${url}" controls></video>`;
+  }
+}
+
+function downloadFile(id) {
+  closeAllMenus();
+  window.open(API_BASE + '/file/' + id, '_blank');
+}
+
+function openShare(id) {
+  closeAllMenus();
+  pendingShareId = id;
+  document.getElementById('shareLinkBox').style.display = 'none';
+  document.getElementById('shareLinkInput').value = '';
+  openModal('shareModal');
+}
+
+async function generateShareLink() {
+  if (!pendingShareId) return;
+
+  const access     = document.getElementById('share-access').value;
+  const start      = document.getElementById('share-start').value;
+  const expiryVal  = document.getElementById('share-expiry-val').value;
+  const expiryUnit = document.getElementById('share-expiry-unit').value;
+  const password   = document.getElementById('share-password').value;
+  const downloadLimit = document.getElementById('share-download-limit').value;
+
+  const fd = new FormData();
+
+  fd.append("access", access);
+  fd.append("start_mode", start);
+
+  if (password) fd.append("password", password);
+
+  if (expiryUnit === "permanent") {
+    fd.append("unit", "permanent");
+  } else {
+    fd.append("value", expiryVal || 1);
+    fd.append("unit", expiryUnit);
+  }
+
+  if (downloadLimit) {
+    fd.append("max_downloads", downloadLimit);
+  }
+
+  try {
+    const res = await fetch(API_BASE + `/create-share/${pendingShareId}`, {
+      method: "POST",
+      body: fd,
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    // 🔥 DEBUG (ADD THIS)
+    console.log("SECURE MODE:", isSecure);
+    console.log("LINK:", data.link);
+    console.log("RAW:", data.raw_url);
+
+    if (data.link) {
+
+      // 🔥 FORCE CORRECT LINK BASED ON FILE TYPE (BEST FIX)
+      const selectedFile = allFiles.find(f => f.file_id === pendingShareId);
+
+      document.getElementById('shareLinkInput').value = data.link;   // ✅ ALWAYS USE BACKEND
+
+      document.getElementById('shareLinkBox').style.display = 'flex';
+      document.getElementById('shareStats').style.display = 'block';
+      document.getElementById('shareViews').innerText = 0;
+      document.getElementById('shareLastOpen').innerText = "-";
+      toast('Share link generated!', 'success');
+    } else {
+      throw new Error(data.error || "No link");
+    }
+
+  } catch (e) {
+    toast('Could not create share link.', 'error');
+  }
+}
+
+async function loadProfile() {
+  try {
+    const res = await fetch(API_BASE + '/get-profile', {
+      credentials: 'include'
+    });
+
+    const data = await res.json();
+
+    userProfile = data;
+    applyProfileUI(); // 🔥 this fills modal
+
+  } catch (e) {
+    console.error("Profile load failed", e);
+  }
+}
+
+function copyShareLink() {
+  const val = document.getElementById('shareLinkInput').value;
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => toast('Link copied to clipboard!', 'success'));
+}
+
+function openDelete(id, name) {
+  closeAllMenus();
+  pendingDeleteId = id;
+  document.getElementById('deleteFileName').textContent = name;
+  openModal('deleteModal');
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  try {
+    await fetch(API_BASE + `/delete/${pendingDeleteId}`, {
+      credentials: 'include'
+    });
+
+    closeModal('deleteModal');
+    toast('File deleted.', 'info');
+
+    allFiles = allFiles.filter(f => (f.file_id ?? f.id ?? f._id) !== pendingDeleteId);
+    updateCounts();
+    renderFiles();
+  } catch (e) {
+    toast('Delete failed. Check backend.', 'error');
+  }
+  pendingDeleteId = null;
+}
+
+// ============================================================
+//  PROFILE
+// ============================================================
+async function saveProfile() {
+  const name  = document.getElementById('pi-name').value.trim();
+  const phone = document.getElementById('pi-phone').value.trim();
+  const digits = phone.replace(/\D/g, '');
+
+if (digits.length !== 12) {
+  alert("Phone must be 10 digits (+91XXXXXXXXXX)");
+  return;
+}
+  if (!name) { toast('Name cannot be empty.', 'error'); return; }
+
+  try {
+    await api('POST', '/update-profile', { name, phone });
+    userProfile.name = name;
+    userProfile.phone = phone;
+    applyProfileUI();
+    closeModal('personalModal');
+    toast('Profile updated!', 'success');
+  } catch (e) {
+    toast('Could not update profile. Check backend.', 'error');
+  }
+}
+
+
+
+function applyPlanRestrictions(currentPlan) {
+  const order = { free: 0, "2gb": 1, "5gb": 2 };
+
+  document.querySelectorAll('.sub-card').forEach(card => {
+    const plan = card.dataset.plan;
+
+    if (order[plan] < order[currentPlan]) {
+      card.style.opacity = "0.5";
+      card.style.pointerEvents = "none";
+    }
+  });
+}
+// ============================================================
+//  SECURE TOGGLE
+// ============================================================
+function toggleSecure() {
+  isSecure = !isSecure;
+
+  const btn = document.getElementById('secureToggle');
+  const lbl = document.getElementById('secureLabel');
+
+  btn.className = 'secure-toggle ' + (isSecure ? 'secure' : 'insecure');
+  lbl.textContent = isSecure ? 'Secure' : 'Insecure';
+
+  // 🔥 ADD THIS
+  localStorage.setItem("upload_mode", isSecure ? "secure" : "insecure");
+
+  console.log("MODE NOW:", isSecure ? "secure" : "insecure");
+}
+
+// ============================================================
+//  THEME
+// ============================================================
+function setTheme(theme) {
+  applyTheme(theme);
+  localStorage.setItem('vault_theme', theme);
+  closeModal('themeModal');
+  toast('Theme set to ' + theme + ' mode.', 'info');
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeBtn').textContent = theme === 'dark' ? '🌙' : '☀️';
+  document.getElementById('themeCardDark')?.classList.toggle('selected', theme === 'dark');
+  document.getElementById('themeCardLight')?.classList.toggle('selected', theme === 'light');
+}
+
+// ============================================================
+//  PROFILE DROPDOWN
+// ============================================================
+function toggleProfileDropdown(e) {
+  e.stopPropagation(); // 🔥 FIX
+  document.getElementById('profileDropdown').classList.toggle('open');
+}
+function closeDropdown() {
+  document.getElementById('profileDropdown').classList.remove('open');
+}
+
+// ============================================================
+//  3-DOT MENUS
+// ============================================================
+function toggleMenu(e, id) {
+  e.stopPropagation();
+  const menu = document.getElementById(id);
+  const wasOpen = menu.classList.contains('open');
+  closeAllMenus();
+  if (!wasOpen) menu.classList.add('open');
+}
+function closeAllMenus() {
+  document.querySelectorAll('.three-dot-menu.open').forEach(m => m.classList.remove('open'));
+  document.getElementById('profileDropdown').classList.remove('open');
+}
+
+// ============================================================
+//  MODALS
+// ============================================================
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+document.querySelectorAll('.modal-backdrop').forEach(b => {
+  b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); });
+});
+
+// ============================================================
+//  LOGOUT
+// ============================================================
+function handleLogout() {
+  if (confirm('Are you sure you want to logout?')) {
+    fetch(API_BASE + '/logout', { credentials: 'include' })
+  .then(() => window.location.href = '/');
+  }
+}
+
+async function sendOTP() {
+  const email = document.getElementById('fpEmail').value;
+
+  const res = await fetch('/send-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+
+  if (res.ok) {
+    document.getElementById('otpSection').style.display = 'block';
+  }
+}
+
+async function verifyOTP() {
+  const email = document.getElementById('fpEmail').value;
+  const otp = document.getElementById('fpOtp').value;
+
+  const res = await fetch('/verify-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, otp })
+  });
+
+  if (res.ok) {
+    document.getElementById('resetSection').style.display = 'block';
+  }
+}
+
+async function resetPassword() {
+  const email = document.getElementById('fpEmail').value;
+  const password = document.getElementById('fpPass').value;
+
+  await fetch('/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+
+  alert('Password updated');
+}
+
+const durationEl = document.getElementById('duration');
+
+durationEl.addEventListener('change', () => {
+  const d = durationEl.value;
+
+  if (d === '1y') {
+    document.getElementById('price2gb').innerText = '₹4069/year';
+    document.getElementById('price5gb').innerText = '₹6109/year';
+  } else {
+    document.getElementById('price2gb').innerText = '₹2394/6 months';
+    document.getElementById('price5gb').innerText = '₹3594/6 months';
+  }
+});
+
+function handleSearch() {
+  renderFiles();
+  highlightFirstMatch();
+}
+
+function highlightFirstMatch() {
+  const rows = document.querySelectorAll('#fileTableBody tr');
+
+  if (!rows.length) return;
+
+  // remove old highlight
+  rows.forEach(r => r.classList.remove('search-hit'));
+
+  const first = rows[0];
+
+  first.classList.add('search-hit');
+
+  first.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+
+document.getElementById("searchInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    const first = document.querySelector('#fileTableBody tr');
+    if (!first) return;
+
+    const fileId = first.querySelector('.three-dot-btn')
+      ?.getAttribute('onclick')
+      ?.match(/menu-(.*)'?\)/)?.[1];
+
+    if (fileId) {
+      viewFile(fileId);
+    }
+  }
+});
+
+async function subscribe(plan) {
+  const duration = document.getElementById('duration').value;
+
+  const res = await fetch('/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan, duration })
+  });
+
+  const data = await res.json();
+  alert('Subscribed! Price: ₹' + data.price);
+}
+
+async function loadStorage() {
+  const res = await fetch('/api/files');
+  const data = await res.json();
+
+  let total = 0;
+  data.files.forEach(f => total += f.size || 0);
+
+  document.getElementById('storageInfo').innerText =
+    'Used: ' + (total / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+loadStorage();
+
+// ============================================================
+//  TOAST
+// ============================================================
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  el.innerHTML = `<span>${icons[type] || ''}</span><span>${escHtml(msg)}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+
+function setDuration(type) {
+  currentDuration = type;
+
+  // reset buttons
+  document.getElementById("dur6").classList.remove("active");
+  document.getElementById("dur1").classList.remove("active");
+
+  if (type === "6m") {
+    document.getElementById("dur6").classList.add("active");
+
+    // 6 months prices
+    document.getElementById("price-2gb").innerText = "₹2394";
+    document.getElementById("price-5gb").innerText = "₹3594";
+
+  } else if (type === "12m") {
+    document.getElementById("dur1").classList.add("active");
+
+    // 12 months (2x of 6m with 15% discount)
+    const price2gb = Math.round(2394 * 2 * 0.85);
+    const price5gb = Math.round(3594 * 2 * 0.85);
+
+    document.getElementById("price-2gb").innerText = "₹" + price2gb;
+    document.getElementById("price-5gb").innerText = "₹" + price5gb;
+  }
+}
+
+async function subscribePlan() {
+  console.log("SENDING:", selectedPlan, currentDuration);
+
+  try {
+    const res = await fetch('/activate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        plan: selectedPlan,
+        duration: currentDuration
+      })
+    });
+
+    const data = await res.json();
+    console.log("RESPONSE:", data);
+
+    if (data.success) {
+      toast("Plan activated successfully!", "success");
+
+      await loadDashboard();
+
+      closeModal('subscriptionModal');
+    } else {
+      toast(data.error || "Activation failed", "error");
+    }
+
+  } catch (e) {
+    console.error(e);
+    toast("Server error", "error");
+  }
+}
+// ============================================================
+//  UTILS
+// ============================================================
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+setInterval(() => {
+  document.querySelectorAll("[data-expiry]").forEach(el => {
+    const exp = el.getAttribute("data-expiry");
+    if (exp) el.textContent = formatRemaining(exp);
+  });
+}, 1000);
+</script>
+</body>
+</html>
